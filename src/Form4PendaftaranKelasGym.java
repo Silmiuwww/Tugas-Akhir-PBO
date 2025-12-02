@@ -1,0 +1,296 @@
+import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
+import java.awt.event.*;
+import java.sql.*;
+
+public class Form4PendaftaranKelasGym {
+
+    public static void main(String[] args) {
+
+        JFrame frame = new JFrame("Form Pendaftaran Kelas Gym");
+        frame.setSize(850, 550);
+        frame.setLayout(null);
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+        // ================== FORM FIELD ==================
+        JLabel lblMember = new JLabel("Member:");
+        lblMember.setBounds(20, 20, 120, 25);
+        frame.add(lblMember);
+
+        JComboBox<String> cbMember = new JComboBox<>();
+        cbMember.setBounds(150, 20, 250, 25);
+        frame.add(cbMember);
+
+        JLabel lblKelas = new JLabel("Kelas:");
+        lblKelas.setBounds(20, 60, 120, 25);
+        frame.add(lblKelas);
+
+        JComboBox<String> cbKelas = new JComboBox<>();
+        cbKelas.setBounds(150, 60, 250, 25);
+        frame.add(cbKelas);
+
+        JLabel lblTanggal = new JLabel("Tanggal Daftar (YYYY-MM-DD):");
+        lblTanggal.setBounds(20, 100, 200, 25);
+        frame.add(lblTanggal);
+
+        JTextField txtTanggal = new JTextField();
+        txtTanggal.setBounds(220, 100, 180, 25);
+        frame.add(txtTanggal);
+
+        JLabel lblCatatan = new JLabel("Catatan:");
+        lblCatatan.setBounds(20, 140, 120, 25);
+        frame.add(lblCatatan);
+
+        JTextArea txtCatatan = new JTextArea();
+        JScrollPane scrollCatatan = new JScrollPane(txtCatatan);
+        scrollCatatan.setBounds(150, 140, 250, 70);
+        frame.add(scrollCatatan);
+
+        // ================== BUTTON ==================
+        JButton btnSimpan = new JButton("Simpan");
+        btnSimpan.setBounds(450, 20, 120, 30);
+        frame.add(btnSimpan);
+
+        JButton btnUpdate = new JButton("Update");
+        btnUpdate.setBounds(450, 60, 120, 30);
+        frame.add(btnUpdate);
+
+        JButton btnDelete = new JButton("Hapus");
+        btnDelete.setBounds(450, 100, 120, 30);
+        frame.add(btnDelete);
+
+        JButton btnReset = new JButton("Reset");
+        btnReset.setBounds(450, 140, 120, 30);
+        frame.add(btnReset);
+
+        // ================== TABLE ==================
+        DefaultTableModel model = new DefaultTableModel(
+                new Object[]{"ID", "Member", "Kelas", "Tanggal Daftar", "Catatan"}, 0
+        );
+
+        JTable table = new JTable(model);
+        JScrollPane scroll = new JScrollPane(table);
+        scroll.setBounds(20, 240, 780, 260);
+        frame.add(scroll);
+
+        // Load ComboBox + Table
+        loadMember(cbMember);
+        loadKelas(cbKelas);
+        loadData(model);
+
+        // ================== BUTTON SIMPAN ==================
+        btnSimpan.addActionListener(e -> {
+            try {
+                if(cbMember.getSelectedItem() == null ||
+                   cbKelas.getSelectedItem() == null ||
+                   txtTanggal.getText().isEmpty()) {
+                    JOptionPane.showMessageDialog(frame, "Semua field wajib diisi!");
+                    return;
+                }
+
+                Connection conn = getConn();
+                String sql = "INSERT INTO pendaftaran_kelas (id_member, id_kelas, tanggal_daftar, catatan) VALUES (?, ?, ?, ?)";
+
+                PreparedStatement ps = conn.prepareStatement(sql);
+                ps.setInt(1, getIdFromCombo(cbMember));
+                ps.setInt(2, getIdFromCombo(cbKelas));
+                ps.setString(3, txtTanggal.getText());
+                ps.setString(4, txtCatatan.getText());
+
+                ps.executeUpdate();
+                conn.close();
+
+                JOptionPane.showMessageDialog(frame, "Data berhasil disimpan!");
+                loadData(model);
+                resetForm(cbMember, cbKelas, txtTanggal, txtCatatan);
+
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(frame, "Error: " + ex.getMessage());
+            }
+        });
+
+        // ================== TABLE CLICK ==================
+        table.addMouseListener(new MouseAdapter() {
+            public void mouseClicked(MouseEvent e) {
+                int baris = table.getSelectedRow();
+                if(baris >= 0) {
+                    cbMember.setSelectedItem(model.getValueAt(baris, 1).toString());
+                    cbKelas.setSelectedItem(model.getValueAt(baris, 2).toString());
+                    txtTanggal.setText(model.getValueAt(baris, 3).toString());
+                    txtCatatan.setText(model.getValueAt(baris, 4).toString());
+                }
+            }
+        });
+
+        // ================== UPDATE ==================
+        btnUpdate.addActionListener(e -> {
+
+            int baris = table.getSelectedRow();
+            if(baris < 0) {
+                JOptionPane.showMessageDialog(frame, "Pilih data dulu!");
+                return;
+            }
+
+            try {
+                int idPend = (int) model.getValueAt(baris, 0);
+
+                Connection conn = getConn();
+                String sql = "UPDATE pendaftaran_kelas SET id_member=?, id_kelas=?, tanggal_daftar=?, catatan=? WHERE id_pendaftaran=?";
+
+                PreparedStatement ps = conn.prepareStatement(sql);
+
+                ps.setInt(1, getIdFromCombo(cbMember));
+                ps.setInt(2, getIdFromCombo(cbKelas));
+                ps.setString(3, txtTanggal.getText());
+                ps.setString(4, txtCatatan.getText());
+                ps.setInt(5, idPend);
+
+                ps.executeUpdate();
+                conn.close();
+
+                JOptionPane.showMessageDialog(frame, "Data berhasil diupdate!");
+                loadData(model);
+                resetForm(cbMember, cbKelas, txtTanggal, txtCatatan);
+
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(frame, "Error: " + ex.getMessage());
+            }
+
+        });
+
+        // ================== DELETE ==================
+        btnDelete.addActionListener(e -> {
+            int baris = table.getSelectedRow();
+            if(baris < 0) {
+                JOptionPane.showMessageDialog(frame, "Pilih data dulu!");
+                return;
+            }
+
+            try {
+                int idPend = (int) model.getValueAt(baris, 0);
+
+                Connection conn = getConn();
+                String sql = "DELETE FROM pendaftaran_kelas WHERE id_pendaftaran=?";
+
+                PreparedStatement ps = conn.prepareStatement(sql);
+                ps.setInt(1, idPend);
+                ps.executeUpdate();
+                conn.close();
+
+                JOptionPane.showMessageDialog(frame, "Data berhasil dihapus!");
+                loadData(model);
+                resetForm(cbMember, cbKelas, txtTanggal, txtCatatan);
+
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(frame, "Error: " + ex.getMessage());
+            }
+        });
+
+        // ================== RESET ==================
+        btnReset.addActionListener(e -> resetForm(cbMember, cbKelas, txtTanggal, txtCatatan));
+
+        frame.setVisible(true);
+    }
+
+    // ================== RESET FORM ==================
+    private static void resetForm(JComboBox<String> cbMember, JComboBox<String> cbKelas,
+                                  JTextField txtTanggal, JTextArea txtCatatan) {
+
+        if(cbMember.getItemCount() > 0) cbMember.setSelectedIndex(0);
+        if(cbKelas.getItemCount() > 0) cbKelas.setSelectedIndex(0);
+        txtTanggal.setText("");
+        txtCatatan.setText("");
+    }
+
+    // ================== KONEKSI ==================
+    private static Connection getConn() throws Exception {
+        return DriverManager.getConnection(
+                "jdbc:postgresql://localhost:5432/ManajemenGym",
+                "postgres",
+                "1"
+        );
+    }
+
+    // ================== LOAD MEMBER ==================
+    private static void loadMember(JComboBox<String> cb) {
+        try {
+            Connection conn = getConn();
+            ResultSet rs = conn.prepareStatement(
+                    "SELECT id_member, nama FROM member_gym ORDER BY id_member"
+            ).executeQuery();
+
+            cb.removeAllItems();
+
+            while (rs.next()) {
+                cb.addItem(rs.getInt("id_member") + " - " + rs.getString("nama"));
+            }
+
+            conn.close();
+
+        } catch (Exception ex) {
+            System.out.println("Load Member Error: " + ex.getMessage());
+        }
+    }
+
+    // ================== LOAD KELAS ==================
+    private static void loadKelas(JComboBox<String> cb) {
+        try {
+            Connection conn = getConn();
+            ResultSet rs = conn.prepareStatement(
+                    "SELECT id_kelas, nama_kelas FROM jadwal_kelas ORDER BY id_kelas"
+            ).executeQuery();
+
+            cb.removeAllItems();
+
+            while (rs.next()) {
+                cb.addItem(rs.getInt("id_kelas") + " - " + rs.getString("nama_kelas"));
+            }
+
+            conn.close();
+
+        } catch (Exception ex) {
+            System.out.println("Load Kelas Error: " + ex.getMessage());
+        }
+    }
+
+    // Ambil "id" dari ComboBox "id - nama"
+    private static int getIdFromCombo(JComboBox<String> cb) {
+        String item = cb.getSelectedItem().toString();
+        return Integer.parseInt(item.split(" - ")[0]);
+    }
+
+    // ================== LOAD TABLE ==================
+    private static void loadData(DefaultTableModel model) {
+        try {
+            Connection conn = getConn();
+            model.setRowCount(0);
+
+            String sql =
+                "SELECT p.id_pendaftaran, " +
+                "       m.id_member || ' - ' || m.nama AS member, " +
+                "       k.id_kelas || ' - ' || k.nama_kelas AS kelas, " +
+                "       p.tanggal_daftar, p.catatan " +
+                "FROM pendaftaran_kelas p " +
+                "JOIN member_gym m ON p.id_member = m.id_member " +
+                "JOIN jadwal_kelas k ON p.id_kelas = k.id_kelas " +
+                "ORDER BY p.id_pendaftaran ASC";
+
+            ResultSet rs = conn.prepareStatement(sql).executeQuery();
+
+            while (rs.next()) {
+                model.addRow(new Object[]{
+                        rs.getInt("id_pendaftaran"),
+                        rs.getString("member"),
+                        rs.getString("kelas"),
+                        rs.getString("tanggal_daftar"),
+                        rs.getString("catatan")
+                });
+            }
+
+            conn.close();
+
+        } catch (Exception ex) {
+            System.out.println("Load error: " + ex.getMessage());
+        }
+    }
+}
