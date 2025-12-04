@@ -1,25 +1,24 @@
-import javax.swing.*;
-import java.awt.event.*;
 import java.sql.*;
 import java.time.LocalDate;
+import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
 
 public class Form1RegistrasiGym {
 
     public static void main(String[] args) {
 
         JFrame frame = new JFrame("Form Registrasi Member Gym");
-        frame.setSize(450, 450);
+        frame.setSize(750, 550);
         frame.setLayout(null);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
         // Label Nama
-        JLabel lblNama = new JLabel("Nama Member:");
+        JLabel lblNama = new JLabel("Nama:");
         lblNama.setBounds(20, 20, 120, 25);
         frame.add(lblNama);
 
-        // Input Nama
         JTextField txtNama = new JTextField();
-        txtNama.setBounds(160, 20, 250, 25);
+        txtNama.setBounds(150, 20, 200, 25);
         frame.add(txtNama);
 
         // Label Email
@@ -27,9 +26,8 @@ public class Form1RegistrasiGym {
         lblEmail.setBounds(20, 60, 120, 25);
         frame.add(lblEmail);
 
-        // Input Email
         JTextField txtEmail = new JTextField();
-        txtEmail.setBounds(160, 60, 250, 25);
+        txtEmail.setBounds(150, 60, 200, 25);
         frame.add(txtEmail);
 
         // Label No Telepon
@@ -38,7 +36,7 @@ public class Form1RegistrasiGym {
         frame.add(lblTelepon);
 
         JTextField txtTelepon = new JTextField();
-        txtTelepon.setBounds(160, 100, 250, 25);
+        txtTelepon.setBounds(150, 100, 200, 25);
         frame.add(txtTelepon);
 
         // Label Membership
@@ -48,98 +46,141 @@ public class Form1RegistrasiGym {
 
         String[] membership = {"Basic", "Premium", "VIP"};
         JComboBox<String> cbMembership = new JComboBox<>(membership);
-        cbMembership.setBounds(160, 140, 250, 25);
+        cbMembership.setBounds(150, 140, 200, 25);
         frame.add(cbMembership);
 
         // Tombol Simpan
-        JButton btnSimpan = new JButton("Daftarkan Member");
-        btnSimpan.setBounds(20, 190, 180, 30);
+        JButton btnSimpan = new JButton("Simpan");
+        btnSimpan.setBounds(20, 190, 150, 30);
         frame.add(btnSimpan);
 
         // Tombol Reset
         JButton btnReset = new JButton("Reset");
-        btnReset.setBounds(230, 190, 180, 30);
+        btnReset.setBounds(200, 190, 150, 30);
         frame.add(btnReset);
 
-        // TextArea hasil
-        JTextArea areaHasil = new JTextArea();
-        areaHasil.setBounds(20, 240, 390, 150);
-        areaHasil.setEditable(false);
-        frame.add(areaHasil);
+        // Tombol Hapus
+        JButton btnHapus = new JButton("Hapus Data");
+        btnHapus.setBounds(380, 190, 150, 30);
+        frame.add(btnHapus);
 
-        // EVENT SIMPAN KE POSTGRESQL
-        btnSimpan.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                String nama = txtNama.getText().trim();
-                String email = txtEmail.getText().trim();
-                String telepon = txtTelepon.getText().trim();
-                String membership = cbMembership.getSelectedItem().toString();
+        // TABEL
+        String[] kolom = {"ID", "Nama", "Email", "Telepon", "Tgl Bergabung", "Membership"};
 
-                // tanggal otomatis hari ini
-                LocalDate tanggalBergabung = LocalDate.now();
+        DefaultTableModel model = new DefaultTableModel(kolom, 0);
+        JTable table = new JTable(model);
 
-                // Validasi input
-                if (nama.isEmpty() || email.isEmpty()) {
-                    JOptionPane.showMessageDialog(frame,
-                        "Nama dan Email wajib diisi!",
-                        "Error",
-                        JOptionPane.ERROR_MESSAGE);
-                    return;
+        JScrollPane scroll = new JScrollPane(table);
+        scroll.setBounds(20, 250, 700, 250);
+        frame.add(scroll);
+
+        // FUNGSI KONEKSI
+        String url = "jdbc:postgresql://localhost:5432/db_gym";
+        String user = "postgres";
+        String pass = "cerr2407";
+
+        // LOAD DATA KE JTABLE
+        Runnable loadData = () -> {
+            model.setRowCount(0);
+            try (Connection conn = DriverManager.getConnection(url, user, pass)) {
+                String sql = "SELECT * FROM member_gym ORDER BY id_member ASC";
+                ResultSet rs = conn.createStatement().executeQuery(sql);
+
+                while (rs.next()) {
+                    model.addRow(new Object[]{
+                            rs.getInt("id_member"),
+                            rs.getString("nama"),
+                            rs.getString("email"),
+                            rs.getString("no_telepon"),
+                            rs.getDate("tanggal_bergabung"),
+                            rs.getString("jenis_membership")
+                    });
                 }
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(frame, ex.getMessage());
+            }
+        };
 
-                try {
-                    // Koneksi PostgreSQL
-                    Connection conn = DriverManager.getConnection(
-                        "jdbc:postgresql://localhost:5432/db_gym",
-                        "postgres",      // user PostgreSQL kamu
-                        "cerr2407"          // password PostgreSQL
-                    );
+        loadData.run();
 
-                    // Query insert
-                    String sql = "INSERT INTO member_gym (nama, email, no_telepon, tanggal_bergabung, jenis_membership) VALUES (?, ?, ?, ?, ?)";
+        // INSERT 5 DATA OTOMATIS
+        try (Connection conn = DriverManager.getConnection(url, user, pass)) {
+            ResultSet rs = conn.createStatement().executeQuery("SELECT COUNT(*) FROM member_gym");
+            rs.next();
 
-                    PreparedStatement stmt = conn.prepareStatement(sql);
-                    stmt.setString(1, nama);
-                    stmt.setString(2, email);
-                    stmt.setString(3, telepon);
-                    stmt.setDate(4, java.sql.Date.valueOf(tanggalBergabung));
-                    stmt.setString(5, membership);
+            if (rs.getInt(1) < 5) {
+                conn.createStatement().executeUpdate(
+                    "INSERT INTO member_gym (nama, email, no_telepon, tanggal_bergabung, jenis_membership) VALUES" +
+                    "('Ubai', 'ubai@mail.com', '0842241472', CURRENT_DATE, 'Basic')," +
+                    "('Zaki', 'zaki@mail.com', '0854225285', CURRENT_DATE, 'Premium')," +
+                    "('Rifat', 'rifat@mail.com', '0823632552', CURRENT_DATE, 'VIP')," +
+                    "('Terziqo', 'terziqo@mail.com', '0823325525', CURRENT_DATE, 'Basic')," +
+                    "('Tanggaq', 'tanggaq@mail.com', '0845264626', CURRENT_DATE, 'Premium')"
+                );
+            }
+        } catch (Exception ex) {}
 
-                    stmt.executeUpdate();
-                    conn.close();
+        loadData.run();
 
-                    // hasil ke text area
-                    areaHasil.setText("REGISTRASI BERHASIL:\n");
-                    areaHasil.append("Nama : " + nama + "\n");
-                    areaHasil.append("Email : " + email + "\n");
-                    areaHasil.append("Telepon : " + telepon + "\n");
-                    areaHasil.append("Tanggal Bergabung : " + tanggalBergabung + "\n");
-                    areaHasil.append("Membership : " + membership + "\n");
+        // EVENT SIMPAN
+        btnSimpan.addActionListener(e -> {
+            String nama = txtNama.getText().trim();
+            String email = txtEmail.getText().trim();
+            String telepon = txtTelepon.getText().trim();
+            String membershipSelect = cbMembership.getSelectedItem().toString();
 
-                    JOptionPane.showMessageDialog(frame,
-                        "Member berhasil didaftarkan!",
-                        "Sukses",
-                        JOptionPane.INFORMATION_MESSAGE);
+            if (nama.isEmpty() || email.isEmpty()) {
+                JOptionPane.showMessageDialog(frame, "Nama & Email wajib diisi!", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
 
-                } catch (Exception ex) {
-                    JOptionPane.showMessageDialog(frame,
-                        "Gagal menyimpan ke database!\n" + ex.getMessage(),
-                        "Error",
-                        JOptionPane.ERROR_MESSAGE);
-                }
+            try (Connection conn = DriverManager.getConnection(url, user, pass)) {
+
+                String sql = "INSERT INTO member_gym (nama, email, no_telepon, tanggal_bergabung, jenis_membership) VALUES (?, ?, ?, ?, ?)";
+
+                PreparedStatement stmt = conn.prepareStatement(sql);
+                stmt.setString(1, nama);
+                stmt.setString(2, email);
+                stmt.setString(3, telepon);
+                stmt.setDate(4, Date.valueOf(LocalDate.now()));
+                stmt.setString(5, membershipSelect);
+
+                stmt.executeUpdate();
+
+                JOptionPane.showMessageDialog(frame, "Data berhasil ditambahkan!");
+                loadData.run();
+
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(frame, ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             }
         });
 
         // EVENT RESET
-        btnReset.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                txtNama.setText("");
-                txtEmail.setText("");
-                txtTelepon.setText("");
-                cbMembership.setSelectedIndex(0);
-                areaHasil.setText("");
+        btnReset.addActionListener(e -> {
+            txtNama.setText("");
+            txtEmail.setText("");
+            txtTelepon.setText("");
+            cbMembership.setSelectedIndex(0);
+        });
+
+        // EVENT HAPUS
+        btnHapus.addActionListener(e -> {
+            int selected = table.getSelectedRow();
+            if (selected == -1) {
+                JOptionPane.showMessageDialog(frame, "Pilih data di tabel!");
+                return;
+            }
+
+            int idDelete = (int) model.getValueAt(selected, 0);
+
+            try (Connection conn = DriverManager.getConnection(url, user, pass)) {
+                conn.createStatement().executeUpdate("DELETE FROM member_gym WHERE id_member=" + idDelete);
+                JOptionPane.showMessageDialog(frame, "Data berhasil dihapus!");
+
+                loadData.run();
+
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(frame, ex.getMessage());
             }
         });
 
