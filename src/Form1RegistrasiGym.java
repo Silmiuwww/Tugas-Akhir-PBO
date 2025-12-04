@@ -1,209 +1,182 @@
-import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
-import java.awt.event.*;
 import java.sql.*;
 import java.time.LocalDate;
+import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
 
 public class Form1RegistrasiGym extends JPanel {
 
     public Form1RegistrasiGym(JFrame parent) {
 
-        setLayout(null);
+        JFrame frame = new JFrame("Form Registrasi Member Gym");
+        frame.setSize(750, 550);
+        frame.setLayout(null);
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-        // ================= FORM FIELD ==================
-        JLabel lblNama = new JLabel("Nama Member:");
-        lblNama.setBounds(20, 20, 150, 25);
-        add(lblNama);
+        // Label Nama
+        JLabel lblNama = new JLabel("Nama:");
+        lblNama.setBounds(20, 20, 120, 25);
+        frame.add(lblNama);
 
         JTextField txtNama = new JTextField();
-        txtNama.setBounds(170, 20, 200, 25);
-        add(txtNama);
+        txtNama.setBounds(150, 20, 200, 25);
+        frame.add(txtNama);
 
         JLabel lblEmail = new JLabel("Email:");
         lblEmail.setBounds(20, 60, 150, 25);
         add(lblEmail);
 
         JTextField txtEmail = new JTextField();
-        txtEmail.setBounds(170, 60, 200, 25);
-        add(txtEmail);
+        txtEmail.setBounds(150, 60, 200, 25);
+        frame.add(txtEmail);
 
         JLabel lblTelepon = new JLabel("No Telepon:");
         lblTelepon.setBounds(20, 100, 150, 25);
         add(lblTelepon);
 
         JTextField txtTelepon = new JTextField();
-        txtTelepon.setBounds(170, 100, 200, 25);
-        add(txtTelepon);
+        txtTelepon.setBounds(150, 100, 200, 25);
+        frame.add(txtTelepon);
 
         JLabel lblKelamin = new JLabel("Gender:");
         lblKelamin.setBounds(20, 140, 150, 25);
         add(lblKelamin);
 
-        String[] gender = {"Laki-laki", "Perempuan"};
-        JComboBox<String> cbKelamin = new JComboBox<>(gender);
-        cbKelamin.setBounds(170, 140, 200, 25);
-        add(cbKelamin);
+        String[] membership = {"Basic", "Premium", "VIP"};
+        JComboBox<String> cbMembership = new JComboBox<>(membership);
+        cbMembership.setBounds(150, 140, 200, 25);
+        frame.add(cbMembership);
 
-        // ================== BUTTON ==================
+        // Tombol Simpan
         JButton btnSimpan = new JButton("Simpan");
-        btnSimpan.setBounds(450, 20, 120, 30);
-        add(btnSimpan);
-
-        JButton btnUpdate = new JButton("Update");
-        btnUpdate.setBounds(450, 60, 120, 30);
-        add(btnUpdate);
-
-        JButton btnDelete = new JButton("Hapus");
-        btnDelete.setBounds(450, 100, 120, 30);
-        add(btnDelete);
+        btnSimpan.setBounds(20, 190, 150, 30);
+        frame.add(btnSimpan);
 
         JButton btnReset = new JButton("Reset");
-        btnReset.setBounds(450, 140, 120, 30);
-        add(btnReset);
+        btnReset.setBounds(200, 190, 150, 30);
+        frame.add(btnReset);
 
-        // ================== TABEL MEMBER ==================
-        JTable table = new JTable();
-        DefaultTableModel model = new DefaultTableModel(
-            new String[]{"ID", "Nama", "Email", "Telepon", "Jenis Kelamin", "Tgl Bergabung"}, 0
-        );
-        table.setModel(model);
+        // Tombol Hapus
+        JButton btnHapus = new JButton("Hapus Data");
+        btnHapus.setBounds(380, 190, 150, 30);
+        frame.add(btnHapus);
+
+        // TABEL
+        String[] kolom = {"ID", "Nama", "Email", "Telepon", "Tgl Bergabung", "Membership"};
+
+        DefaultTableModel model = new DefaultTableModel(kolom, 0);
+        JTable table = new JTable(model);
 
         JScrollPane scroll = new JScrollPane(table);
-        scroll.setBounds(20, 240, 700, 230);
-        add(scroll);
+        scroll.setBounds(20, 250, 700, 250);
+        frame.add(scroll);
 
-        // ================== FUNGSI LOAD TABEL ==================
-        Runnable loadTable = () -> {
-            try {
-                Connection conn = DriverManager.getConnection(
-                    "jdbc:postgresql://localhost:5432/ManajemenGym",
-                    "postgres",
-                    "Triskapostgre20#"
-                );
-                model.setRowCount(0);
-                ResultSet rs = conn.createStatement().executeQuery("SELECT * FROM member_gym ORDER BY id_member ASC");
+        // FUNGSI KONEKSI
+        String url = "jdbc:postgresql://localhost:5432/db_gym";
+        String user = "postgres";
+        String pass = "cerr2407";
+
+        // LOAD DATA KE JTABLE
+        Runnable loadData = () -> {
+            model.setRowCount(0);
+            try (Connection conn = DriverManager.getConnection(url, user, pass)) {
+                String sql = "SELECT * FROM member_gym ORDER BY id_member ASC";
+                ResultSet rs = conn.createStatement().executeQuery(sql);
 
                 while (rs.next()) {
                     model.addRow(new Object[]{
-                        rs.getInt("id_member"),
-                        rs.getString("nama"),
-                        rs.getString("email"),
-                        rs.getString("no_telepon"),
-                        rs.getString("jenis_kelamin"),
-                        rs.getDate("tanggal_bergabung")
+                            rs.getInt("id_member"),
+                            rs.getString("nama"),
+                            rs.getString("email"),
+                            rs.getString("no_telepon"),
+                            rs.getDate("tanggal_bergabung"),
+                            rs.getString("jenis_membership")
                     });
                 }
-                conn.close();
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(parent, "Gagal memuat tabel!\n" + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(frame, ex.getMessage());
             }
         };
-        loadTable.run();
 
-        // ================== EVENT PILIH DATA TABEL ==================
-        table.addMouseListener(new MouseAdapter() {
-            public void mouseClicked(MouseEvent e) {
-                int row = table.getSelectedRow();
-                if (row != -1) {
-                    txtNama.setText(model.getValueAt(row, 1).toString());
-                    txtEmail.setText(model.getValueAt(row, 2).toString());
-                    txtTelepon.setText(model.getValueAt(row, 3).toString());
-                    cbKelamin.setSelectedItem(model.getValueAt(row, 4).toString());
-                }
+        loadData.run();
+
+        // INSERT 5 DATA OTOMATIS
+        try (Connection conn = DriverManager.getConnection(url, user, pass)) {
+            ResultSet rs = conn.createStatement().executeQuery("SELECT COUNT(*) FROM member_gym");
+            rs.next();
+
+            if (rs.getInt(1) < 5) {
+                conn.createStatement().executeUpdate(
+                    "INSERT INTO member_gym (nama, email, no_telepon, tanggal_bergabung, jenis_membership) VALUES" +
+                    "('Ubai', 'ubai@mail.com', '0842241472', CURRENT_DATE, 'Basic')," +
+                    "('Zaki', 'zaki@mail.com', '0854225285', CURRENT_DATE, 'Premium')," +
+                    "('Rifat', 'rifat@mail.com', '0823632552', CURRENT_DATE, 'VIP')," +
+                    "('Terziqo', 'terziqo@mail.com', '0823325525', CURRENT_DATE, 'Basic')," +
+                    "('Tanggaq', 'tanggaq@mail.com', '0845264626', CURRENT_DATE, 'Premium')"
+                );
             }
-        });
+        } catch (Exception ex) {}
 
-        // ================== EVENT SIMPAN ==================
+        loadData.run();
+
+        // EVENT SIMPAN
         btnSimpan.addActionListener(e -> {
             String nama = txtNama.getText().trim();
             String email = txtEmail.getText().trim();
             String telepon = txtTelepon.getText().trim();
-            String kelamin = cbKelamin.getSelectedItem().toString();
-            LocalDate tgl = LocalDate.now();
+            String membershipSelect = cbMembership.getSelectedItem().toString();
 
             if (nama.isEmpty() || email.isEmpty()) {
-                JOptionPane.showMessageDialog(parent, "Nama dan Email wajib diisi!", "Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(frame, "Nama & Email wajib diisi!", "Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
 
-            try {
-                Connection conn = DriverManager.getConnection(
-                    "jdbc:postgresql://localhost:5432/ManajemenGym",
-                    "postgres",
-                    "Triskapostgre20#"
-                );
+            try (Connection conn = DriverManager.getConnection(url, user, pass)) {
 
-                String sql = "INSERT INTO member_gym (nama, email, no_telepon, tanggal_bergabung, jenis_kelamin) VALUES (?, ?, ?, ?, ?)";
+                String sql = "INSERT INTO member_gym (nama, email, no_telepon, tanggal_bergabung, jenis_membership) VALUES (?, ?, ?, ?, ?)";
+
                 PreparedStatement stmt = conn.prepareStatement(sql);
                 stmt.setString(1, nama);
                 stmt.setString(2, email);
                 stmt.setString(3, telepon);
-                stmt.setDate(4, java.sql.Date.valueOf(tgl));
-                stmt.setString(5, kelamin);
+                stmt.setDate(4, Date.valueOf(LocalDate.now()));
+                stmt.setString(5, membershipSelect);
 
                 stmt.executeUpdate();
-                conn.close();
 
-                JOptionPane.showMessageDialog(parent, "Data berhasil disimpan!");
-                loadTable.run();
+                JOptionPane.showMessageDialog(frame, "Data berhasil ditambahkan!");
+                loadData.run();
 
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(parent, "Gagal menyimpan!\n" + ex.getMessage());
+                JOptionPane.showMessageDialog(frame, ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             }
         });
 
-        // ================== EVENT UPDATE ==================
-        btnUpdate.addActionListener(e -> {
-            int row = table.getSelectedRow();
-            if (row == -1) {
-                JOptionPane.showMessageDialog(parent, "Pilih data pada tabel yang ingin diperbarui!");
-                return;
-            }
-
-            int id = Integer.parseInt(model.getValueAt(row, 0).toString());
-
-            String nama = txtNama.getText().trim();
-            String email = txtEmail.getText().trim();
-            String telepon = txtTelepon.getText().trim();
-            String kelamin = cbKelamin.getSelectedItem().toString();
-
-            if (nama.isEmpty() || email.isEmpty()) {
-                JOptionPane.showMessageDialog(parent, "Nama dan Email wajib diisi!", "Error", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-
-            try {
-                Connection conn = DriverManager.getConnection(
-                    "jdbc:postgresql://localhost:5432/ManajemenGym",
-                    "postgres",
-                    "Triskapostgre20#"
-                );
-
-                String sql = "UPDATE member_gym SET nama=?, email=?, no_telepon=?, jenis_kelamin=? WHERE id_member=?";
-                PreparedStatement stmt = conn.prepareStatement(sql);
-                stmt.setString(1, nama);
-                stmt.setString(2, email);
-                stmt.setString(3, telepon);
-                stmt.setString(4, kelamin);
-                stmt.setInt(5, id);
-
-                stmt.executeUpdate();
-                conn.close();
-
-                JOptionPane.showMessageDialog(parent, "Data berhasil diperbarui!");
-                loadTable.run();
-
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(parent, "Gagal memperbarui!\n" + ex.getMessage());
-            }
+        // EVENT RESET
+        btnReset.addActionListener(e -> {
+            txtNama.setText("");
+            txtEmail.setText("");
+            txtTelepon.setText("");
+            cbMembership.setSelectedIndex(0);
         });
 
-        // ================== EVENT HAPUS ==================
-        btnDelete.addActionListener(e -> {
-            int row = table.getSelectedRow();
-            if (row == -1) {
-                JOptionPane.showMessageDialog(parent, "Pilih data pada tabel terlebih dahulu!");
+        // EVENT HAPUS
+        btnHapus.addActionListener(e -> {
+            int selected = table.getSelectedRow();
+            if (selected == -1) {
+                JOptionPane.showMessageDialog(frame, "Pilih data di tabel!");
                 return;
+            }
+
+            int idDelete = (int) model.getValueAt(selected, 0);
+
+            try (Connection conn = DriverManager.getConnection(url, user, pass)) {
+                conn.createStatement().executeUpdate("DELETE FROM member_gym WHERE id_member=" + idDelete);
+                JOptionPane.showMessageDialog(frame, "Data berhasil dihapus!");
+
+                loadData.run();
+
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(frame, ex.getMessage());
             }
 
             int id = Integer.parseInt(model.getValueAt(row, 0).toString());
