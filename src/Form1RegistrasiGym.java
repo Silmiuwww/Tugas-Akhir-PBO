@@ -3,9 +3,9 @@ import java.time.LocalDate;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 
-public class Form1RegistrasiGym {
+public class Form1RegistrasiGym extends JPanel {
 
-    public static void main(String[] args) {
+    public Form1RegistrasiGym(JFrame parent) {
 
         JFrame frame = new JFrame("Form Registrasi Member Gym");
         frame.setSize(750, 550);
@@ -21,28 +21,25 @@ public class Form1RegistrasiGym {
         txtNama.setBounds(150, 20, 200, 25);
         frame.add(txtNama);
 
-        // Label Email
         JLabel lblEmail = new JLabel("Email:");
-        lblEmail.setBounds(20, 60, 120, 25);
-        frame.add(lblEmail);
+        lblEmail.setBounds(20, 60, 150, 25);
+        add(lblEmail);
 
         JTextField txtEmail = new JTextField();
         txtEmail.setBounds(150, 60, 200, 25);
         frame.add(txtEmail);
 
-        // Label No Telepon
         JLabel lblTelepon = new JLabel("No Telepon:");
-        lblTelepon.setBounds(20, 100, 120, 25);
-        frame.add(lblTelepon);
+        lblTelepon.setBounds(20, 100, 150, 25);
+        add(lblTelepon);
 
         JTextField txtTelepon = new JTextField();
         txtTelepon.setBounds(150, 100, 200, 25);
         frame.add(txtTelepon);
 
-        // Label Membership
-        JLabel lblMembership = new JLabel("Membership:");
-        lblMembership.setBounds(20, 140, 120, 25);
-        frame.add(lblMembership);
+        JLabel lblKelamin = new JLabel("Gender:");
+        lblKelamin.setBounds(20, 140, 150, 25);
+        add(lblKelamin);
 
         String[] membership = {"Basic", "Premium", "VIP"};
         JComboBox<String> cbMembership = new JComboBox<>(membership);
@@ -54,7 +51,6 @@ public class Form1RegistrasiGym {
         btnSimpan.setBounds(20, 190, 150, 30);
         frame.add(btnSimpan);
 
-        // Tombol Reset
         JButton btnReset = new JButton("Reset");
         btnReset.setBounds(200, 190, 150, 30);
         frame.add(btnReset);
@@ -182,8 +178,37 @@ public class Form1RegistrasiGym {
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(frame, ex.getMessage());
             }
+
+            int id = Integer.parseInt(model.getValueAt(row, 0).toString());
+
+            try {
+                Connection conn = DriverManager.getConnection(
+                    "jdbc:postgresql://localhost:5432/ManajemenGym",
+                    "postgres",
+                    "Triskapostgre20#"
+                );
+
+                String sql = "DELETE FROM member_gym WHERE id_member = ?";
+                PreparedStatement stmt = conn.prepareStatement(sql);
+                stmt.setInt(1, id);
+                stmt.executeUpdate();
+
+                conn.close();
+                JOptionPane.showMessageDialog(parent, "Data berhasil dihapus!");
+                loadTable.run();
+
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(parent, "Gagal menghapus!\n" + ex.getMessage());
+            }
         });
 
-        frame.setVisible(true);
+        // ================== EVENT RESET ==================
+        btnReset.addActionListener(e -> {
+            txtNama.setText("");
+            txtEmail.setText("");
+            txtTelepon.setText("");
+            cbKelamin.setSelectedIndex(0);
+        });
+
     }
 }
