@@ -3,82 +3,80 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.event.*;
 import java.sql.*;
 
-public class Form2DataInstrukturGym {
+public class Form2DataInstrukturGym extends JPanel {
+    public Form2DataInstrukturGym(JFrame parent) {
+        setLayout(null);
 
-    public static void main(String[] args) {
-
-        JFrame frame = new JFrame("Form Data Instruktur Gym");
-        frame.setSize(750, 500);
-        frame.setLayout(null);
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-
-        JLabel lblId = new JLabel("ID Instruktur:");
-        lblId.setBounds(20, 20, 120, 25);
-        frame.add(lblId);
-
+        // ============ ID INSTRUKTUR (HIDDEN) ============
         JTextField txtId = new JTextField();
-        txtId.setBounds(150, 20, 200, 25);
-        txtId.setEditable(false);  
-        frame.add(txtId);
+        txtId.setVisible(false);  // tidak ditampilkan
+        // Tidak ditambahkan ke panel agar tidak tampak di form
 
-        JLabel lblNama = new JLabel("Nama:");
-        lblNama.setBounds(20, 60, 120, 25);
-        frame.add(lblNama);
+        // ============ FORM FIELD ============
+
+        JLabel lblNama = new JLabel("Nama Instruktur:");
+        lblNama.setBounds(20, 20, 120, 25);
+        add(lblNama);
 
         JTextField txtNama = new JTextField();
-        txtNama.setBounds(150, 60, 200, 25);
-        frame.add(txtNama);
+        txtNama.setBounds(150, 20, 200, 25);
+        add(txtNama);
 
         JLabel lblUsia = new JLabel("Usia:");
-        lblUsia.setBounds(20, 100, 120, 25);
-        frame.add(lblUsia);
+        lblUsia.setBounds(20, 60, 120, 25);
+        add(lblUsia);
 
         JTextField txtUsia = new JTextField();
-        txtUsia.setBounds(150, 100, 200, 25);
-        frame.add(txtUsia);
+        txtUsia.setBounds(150, 60, 200, 25);
+        add(txtUsia);
 
         JLabel lblKeahlian = new JLabel("Keahlian:");
-        lblKeahlian.setBounds(20, 140, 120, 25);
-        frame.add(lblKeahlian);
+        lblKeahlian.setBounds(20, 100, 120, 25);
+        add(lblKeahlian);
 
         JTextField txtKeahlian = new JTextField();
-        txtKeahlian.setBounds(150, 140, 200, 25);
-        frame.add(txtKeahlian);
+        txtKeahlian.setBounds(150, 100, 200, 25);
+        add(txtKeahlian);
 
         JLabel lblTelp = new JLabel("No. Telepon:");
-        lblTelp.setBounds(20, 180, 120, 25);
-        frame.add(lblTelp);
+        lblTelp.setBounds(20, 140, 120, 25);
+        add(lblTelp);
 
         JTextField txtTelp = new JTextField();
-        txtTelp.setBounds(150, 180, 200, 25);
-        frame.add(txtTelp);
+        txtTelp.setBounds(150, 140, 200, 25);
+        add(txtTelp);
+
+        // ============ BUTTONS ============
 
         JButton btnSimpan = new JButton("Simpan");
-        btnSimpan.setBounds(20, 230, 120, 30);
-        frame.add(btnSimpan);
+        btnSimpan.setBounds(450, 20, 120, 30);
+        add(btnSimpan);
 
         JButton btnUpdate = new JButton("Update");
-        btnUpdate.setBounds(150, 230, 120, 30);
-        frame.add(btnUpdate);
+        btnUpdate.setBounds(450, 60, 120, 30);
+        add(btnUpdate);
 
         JButton btnDelete = new JButton("Hapus");
-        btnDelete.setBounds(280, 230, 120, 30);
-        frame.add(btnDelete);
+        btnDelete.setBounds(450, 100, 120, 30);
+        add(btnDelete);
 
         JButton btnReset = new JButton("Reset");
-        btnReset.setBounds(410, 230, 120, 30);
-        frame.add(btnReset);
+        btnReset.setBounds(450, 140, 120, 30);
+        add(btnReset);
+
+        // ============ TABLE ============
 
         DefaultTableModel model = new DefaultTableModel(
                 new Object[]{"ID", "Nama", "Usia", "Keahlian", "Telepon"}, 0);
 
         JTable table = new JTable(model);
         JScrollPane scroll = new JScrollPane(table);
-        scroll.setBounds(20, 280, 700, 170);
-        frame.add(scroll);
+        scroll.setBounds(20, 250, 700, 200);
+        add(scroll);
 
         loadData(model);
 
+        // ============ SIMPAN DATA ============
         btnSimpan.addActionListener(e -> {
             String nama = txtNama.getText().trim();
             String usiaStr = txtUsia.getText().trim();
@@ -86,7 +84,7 @@ public class Form2DataInstrukturGym {
             String telp = txtTelp.getText().trim();
 
             if (nama.isEmpty() || usiaStr.isEmpty() || keahlian.isEmpty() || telp.isEmpty()) {
-                JOptionPane.showMessageDialog(frame, "Semua field wajib diisi!",
+                JOptionPane.showMessageDialog(parent, "Semua field wajib diisi!",
                         "Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
@@ -95,16 +93,16 @@ public class Form2DataInstrukturGym {
             try {
                 usia = Integer.parseInt(usiaStr);
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(frame, "Usia harus angka!",
+                JOptionPane.showMessageDialog(parent, "Usia harus angka!",
                         "Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
 
             try {
                 Connection conn = DriverManager.getConnection(
-                        "jdbc:postgresql://localhost:5432/db_gym",
+                        "jdbc:postgresql://localhost:5432/ManajemenGym",
                         "postgres",
-                        "bakmi1"
+                        "Triskapostgre20#"
                 );
 
                 String sql = "INSERT INTO instruktur_gym (nama, usia, keahlian, no_telepon) VALUES (?, ?, ?, ?)";
@@ -118,18 +116,19 @@ public class Form2DataInstrukturGym {
                 ps.executeUpdate();
                 conn.close();
 
-                JOptionPane.showMessageDialog(frame, "Data berhasil disimpan!");
+                JOptionPane.showMessageDialog(parent, "Data berhasil disimpan!");
                 loadData(model);
 
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(frame, "Error: " + ex.getMessage());
+                JOptionPane.showMessageDialog(parent, "Error: " + ex.getMessage());
             }
         });
 
+        // ============ TABLE CLICK ============
         table.addMouseListener(new MouseAdapter() {
             public void mouseClicked(MouseEvent e) {
                 int baris = table.getSelectedRow();
-                txtId.setText(model.getValueAt(baris, 0).toString());
+                txtId.setText(model.getValueAt(baris, 0).toString()); // ID tetap disimpan, tapi tidak tampil
                 txtNama.setText(model.getValueAt(baris, 1).toString());
                 txtUsia.setText(model.getValueAt(baris, 2).toString());
                 txtKeahlian.setText(model.getValueAt(baris, 3).toString());
@@ -137,17 +136,18 @@ public class Form2DataInstrukturGym {
             }
         });
 
+        // ============ UPDATE ============
         btnUpdate.addActionListener(e -> {
             if (txtId.getText().isEmpty()) {
-                JOptionPane.showMessageDialog(frame, "Pilih data di tabel terlebih dahulu!");
+                JOptionPane.showMessageDialog(parent, "Pilih data di tabel terlebih dahulu!");
                 return;
             }
 
             try {
                 Connection conn = DriverManager.getConnection(
-                        "jdbc:postgresql://localhost:5432/db_gym",
+                        "jdbc:postgresql://localhost:5432/ManajemenGym",
                         "postgres",
-                        "bakmi1"
+                        "Triskapostgre20#"
                 );
 
                 String sql = "UPDATE instruktur_gym SET nama=?, usia=?, keahlian=?, no_telepon=? WHERE id_instruktur=?";
@@ -162,25 +162,26 @@ public class Form2DataInstrukturGym {
                 ps.executeUpdate();
                 conn.close();
 
-                JOptionPane.showMessageDialog(frame, "Data berhasil diupdate!");
+                JOptionPane.showMessageDialog(parent, "Data berhasil diupdate!");
                 loadData(model);
 
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(frame, "Error: " + ex.getMessage());
+                JOptionPane.showMessageDialog(parent, "Error: " + ex.getMessage());
             }
         });
 
+        // ============ DELETE ============
         btnDelete.addActionListener(e -> {
             if (txtId.getText().isEmpty()) {
-                JOptionPane.showMessageDialog(frame, "Pilih data yang ingin dihapus!");
+                JOptionPane.showMessageDialog(parent, "Pilih data yang ingin dihapus!");
                 return;
             }
 
             try {
                 Connection conn = DriverManager.getConnection(
-                        "jdbc:postgresql://localhost:5432/db_gym",
+                        "jdbc:postgresql://localhost:5432/ManajemenGym",
                         "postgres",
-                        "bakmi1"
+                        "Triskapostgre20#"
                 );
 
                 String sql = "DELETE FROM instruktur_gym WHERE id_instruktur=?";
@@ -188,15 +189,16 @@ public class Form2DataInstrukturGym {
                 ps.setInt(1, Integer.parseInt(txtId.getText()));
                 ps.executeUpdate();
 
-                JOptionPane.showMessageDialog(frame, "Data berhasil dihapus!");
+                JOptionPane.showMessageDialog(parent, "Data berhasil dihapus!");
                 conn.close();
                 loadData(model);
 
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(frame, "Error: " + ex.getMessage());
+                JOptionPane.showMessageDialog(parent, "Error: " + ex.getMessage());
             }
         });
 
+        // ============ RESET ============
         btnReset.addActionListener(e -> {
             txtId.setText("");
             txtNama.setText("");
@@ -205,15 +207,15 @@ public class Form2DataInstrukturGym {
             txtTelp.setText("");
         });
 
-        frame.setVisible(true);
+        parent.setVisible(true);
     }
 
     private static void loadData(DefaultTableModel model) {
         try {
             Connection conn = DriverManager.getConnection(
-                    "jdbc:postgresql://localhost:5432/db_gym",
+                    "jdbc:postgresql://localhost:5432/ManajemenGym",
                     "postgres",
-                    "bakmi1"
+                    "Triskapostgre20#"
             );
 
             model.setRowCount(0);

@@ -2,66 +2,70 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.event.*;
 import java.sql.*;
+import java.time.LocalDate;
 
-public class Form4PendaftaranKelasGym {
-
-    public static void main(String[] args) {
-
-        JFrame frame = new JFrame("Form Pendaftaran Kelas Gym");
-        frame.setSize(850, 550);
-        frame.setLayout(null);
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+public class Form4PendaftaranKelasGym extends JPanel {
+    public Form4PendaftaranKelasGym(JFrame parent) {
+        setLayout(null);
 
         // ================== FORM FIELD ==================
         JLabel lblMember = new JLabel("Member:");
         lblMember.setBounds(20, 20, 120, 25);
-        frame.add(lblMember);
+        add(lblMember);
 
         JComboBox<String> cbMember = new JComboBox<>();
         cbMember.setBounds(150, 20, 250, 25);
-        frame.add(cbMember);
+        add(cbMember);
 
         JLabel lblKelas = new JLabel("Kelas:");
         lblKelas.setBounds(20, 60, 120, 25);
-        frame.add(lblKelas);
+        add(lblKelas);
 
         JComboBox<String> cbKelas = new JComboBox<>();
         cbKelas.setBounds(150, 60, 250, 25);
-        frame.add(cbKelas);
+        add(cbKelas);
 
         JLabel lblTanggal = new JLabel("Tanggal Daftar (YYYY-MM-DD):");
         lblTanggal.setBounds(20, 100, 200, 25);
-        frame.add(lblTanggal);
+        add(lblTanggal);
 
         JTextField txtTanggal = new JTextField();
         txtTanggal.setBounds(220, 100, 180, 25);
-        frame.add(txtTanggal);
+        add(txtTanggal);
+
+        // ================== TANGGAL HARI INI ==================
+        LocalDate today = LocalDate.now();
+        txtTanggal.setText(today.toString()); // otomatis tanggal hari ini
 
         JLabel lblCatatan = new JLabel("Catatan:");
         lblCatatan.setBounds(20, 140, 120, 25);
-        frame.add(lblCatatan);
+        add(lblCatatan);
 
         JTextArea txtCatatan = new JTextArea();
         JScrollPane scrollCatatan = new JScrollPane(txtCatatan);
         scrollCatatan.setBounds(150, 140, 250, 70);
-        frame.add(scrollCatatan);
+        add(scrollCatatan);
 
         // ================== BUTTON ==================
         JButton btnSimpan = new JButton("Simpan");
         btnSimpan.setBounds(450, 20, 120, 30);
-        frame.add(btnSimpan);
+        add(btnSimpan);
 
         JButton btnUpdate = new JButton("Update");
         btnUpdate.setBounds(450, 60, 120, 30);
-        frame.add(btnUpdate);
+        add(btnUpdate);
 
         JButton btnDelete = new JButton("Hapus");
         btnDelete.setBounds(450, 100, 120, 30);
-        frame.add(btnDelete);
+        add(btnDelete);
 
         JButton btnReset = new JButton("Reset");
         btnReset.setBounds(450, 140, 120, 30);
-        frame.add(btnReset);
+        add(btnReset);
+
+        JButton btnRefresh = new JButton("Refresh");
+        btnRefresh.setBounds(450, 180, 120, 30);
+        add(btnRefresh);
 
         // ================== TABLE ==================
         DefaultTableModel model = new DefaultTableModel(
@@ -70,10 +74,10 @@ public class Form4PendaftaranKelasGym {
 
         JTable table = new JTable(model);
         JScrollPane scroll = new JScrollPane(table);
-        scroll.setBounds(20, 240, 780, 260);
-        frame.add(scroll);
+        scroll.setBounds(20, 240, 700, 230);
+        add(scroll);
 
-        // Load ComboBox + Table
+        // Load data awal
         loadMember(cbMember);
         loadKelas(cbKelas);
         loadData(model);
@@ -81,31 +85,31 @@ public class Form4PendaftaranKelasGym {
         // ================== BUTTON SIMPAN ==================
         btnSimpan.addActionListener(e -> {
             try {
-                if(cbMember.getSelectedItem() == null ||
-                   cbKelas.getSelectedItem() == null ||
-                   txtTanggal.getText().isEmpty()) {
-                    JOptionPane.showMessageDialog(frame, "Semua field wajib diisi!");
+                if (cbMember.getSelectedItem() == null || cbKelas.getSelectedItem() == null || txtTanggal.getText().isEmpty()) {
+                    JOptionPane.showMessageDialog(parent, "Semua field wajib diisi!");
                     return;
                 }
 
                 Connection conn = getConn();
                 String sql = "INSERT INTO pendaftaran_kelas (id_member, id_kelas, tanggal_daftar, catatan) VALUES (?, ?, ?, ?)";
-
                 PreparedStatement ps = conn.prepareStatement(sql);
                 ps.setInt(1, getIdFromCombo(cbMember));
                 ps.setInt(2, getIdFromCombo(cbKelas));
-                ps.setString(3, txtTanggal.getText());
-                ps.setString(4, txtCatatan.getText());
 
+                // Konversi tanggal ke java.sql.Date sesuai database
+                LocalDate tgl = LocalDate.parse(txtTanggal.getText());
+                ps.setDate(3, java.sql.Date.valueOf(tgl));
+
+                ps.setString(4, txtCatatan.getText());
                 ps.executeUpdate();
                 conn.close();
 
-                JOptionPane.showMessageDialog(frame, "Data berhasil disimpan!");
+                JOptionPane.showMessageDialog(parent, "Data berhasil disimpan!");
                 loadData(model);
                 resetForm(cbMember, cbKelas, txtTanggal, txtCatatan);
 
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(frame, "Error: " + ex.getMessage());
+                JOptionPane.showMessageDialog(parent, "Error: " + ex.getMessage());
             }
         });
 
@@ -113,7 +117,7 @@ public class Form4PendaftaranKelasGym {
         table.addMouseListener(new MouseAdapter() {
             public void mouseClicked(MouseEvent e) {
                 int baris = table.getSelectedRow();
-                if(baris >= 0) {
+                if (baris >= 0) {
                     cbMember.setSelectedItem(model.getValueAt(baris, 1).toString());
                     cbKelas.setSelectedItem(model.getValueAt(baris, 2).toString());
                     txtTanggal.setText(model.getValueAt(baris, 3).toString());
@@ -124,81 +128,88 @@ public class Form4PendaftaranKelasGym {
 
         // ================== UPDATE ==================
         btnUpdate.addActionListener(e -> {
-
             int baris = table.getSelectedRow();
-            if(baris < 0) {
-                JOptionPane.showMessageDialog(frame, "Pilih data dulu!");
+            if (baris < 0) {
+                JOptionPane.showMessageDialog(parent, "Pilih data dulu!");
                 return;
             }
 
             try {
                 int idPend = (int) model.getValueAt(baris, 0);
-
                 Connection conn = getConn();
                 String sql = "UPDATE pendaftaran_kelas SET id_member=?, id_kelas=?, tanggal_daftar=?, catatan=? WHERE id_pendaftaran=?";
-
                 PreparedStatement ps = conn.prepareStatement(sql);
-
                 ps.setInt(1, getIdFromCombo(cbMember));
                 ps.setInt(2, getIdFromCombo(cbKelas));
-                ps.setString(3, txtTanggal.getText());
+
+                // Konversi tanggal ke java.sql.Date
+                LocalDate tgl = LocalDate.parse(txtTanggal.getText());
+                ps.setDate(3, java.sql.Date.valueOf(tgl));
+
                 ps.setString(4, txtCatatan.getText());
                 ps.setInt(5, idPend);
-
                 ps.executeUpdate();
                 conn.close();
 
-                JOptionPane.showMessageDialog(frame, "Data berhasil diupdate!");
+                JOptionPane.showMessageDialog(parent, "Data berhasil diupdate!");
                 loadData(model);
                 resetForm(cbMember, cbKelas, txtTanggal, txtCatatan);
 
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(frame, "Error: " + ex.getMessage());
+                JOptionPane.showMessageDialog(parent, "Error: " + ex.getMessage());
             }
-
         });
 
         // ================== DELETE ==================
         btnDelete.addActionListener(e -> {
             int baris = table.getSelectedRow();
-            if(baris < 0) {
-                JOptionPane.showMessageDialog(frame, "Pilih data dulu!");
+            if (baris < 0) {
+                JOptionPane.showMessageDialog(parent, "Pilih data dulu!");
                 return;
             }
 
             try {
                 int idPend = (int) model.getValueAt(baris, 0);
-
                 Connection conn = getConn();
                 String sql = "DELETE FROM pendaftaran_kelas WHERE id_pendaftaran=?";
-
                 PreparedStatement ps = conn.prepareStatement(sql);
                 ps.setInt(1, idPend);
                 ps.executeUpdate();
                 conn.close();
 
-                JOptionPane.showMessageDialog(frame, "Data berhasil dihapus!");
+                JOptionPane.showMessageDialog(parent, "Data berhasil dihapus!");
                 loadData(model);
                 resetForm(cbMember, cbKelas, txtTanggal, txtCatatan);
 
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(frame, "Error: " + ex.getMessage());
+                JOptionPane.showMessageDialog(parent, "Error: " + ex.getMessage());
             }
         });
 
         // ================== RESET ==================
-        btnReset.addActionListener(e -> resetForm(cbMember, cbKelas, txtTanggal, txtCatatan));
+        btnReset.addActionListener(e -> {
+            resetForm(cbMember, cbKelas, txtTanggal, txtCatatan);
+            txtTanggal.setText(LocalDate.now().toString()); // set ulang tanggal hari ini
+        });
 
-        frame.setVisible(true);
+        // ================== REFRESH ==================
+        btnRefresh.addActionListener(e -> {
+            loadMember(cbMember);
+            loadKelas(cbKelas);
+            loadData(model);
+            JOptionPane.showMessageDialog(parent, "Data berhasil diperbarui!");
+        });
+
+        parent.setVisible(true);
     }
 
     // ================== RESET FORM ==================
     private static void resetForm(JComboBox<String> cbMember, JComboBox<String> cbKelas,
                                   JTextField txtTanggal, JTextArea txtCatatan) {
 
-        if(cbMember.getItemCount() > 0) cbMember.setSelectedIndex(0);
-        if(cbKelas.getItemCount() > 0) cbKelas.setSelectedIndex(0);
-        txtTanggal.setText("");
+        if (cbMember.getItemCount() > 0) cbMember.setSelectedIndex(0);
+        if (cbKelas.getItemCount() > 0) cbKelas.setSelectedIndex(0);
+        txtTanggal.setText(LocalDate.now().toString()); // tanggal hari ini
         txtCatatan.setText("");
     }
 
@@ -207,7 +218,7 @@ public class Form4PendaftaranKelasGym {
         return DriverManager.getConnection(
                 "jdbc:postgresql://localhost:5432/ManajemenGym",
                 "postgres",
-                "1"
+                "Triskapostgre20#"
         );
     }
 
@@ -282,7 +293,7 @@ public class Form4PendaftaranKelasGym {
                         rs.getInt("id_pendaftaran"),
                         rs.getString("member"),
                         rs.getString("kelas"),
-                        rs.getString("tanggal_daftar"),
+                        rs.getDate("tanggal_daftar").toString(),
                         rs.getString("catatan")
                 });
             }
